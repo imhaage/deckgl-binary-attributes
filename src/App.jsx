@@ -70,6 +70,7 @@ for (let i = 0; i < 5; i++) {
   }
 
   data.push({
+    data: d,
     polygons,
     colors,
     elevations,
@@ -79,15 +80,18 @@ for (let i = 0; i < 5; i++) {
 }
 performance.mark("data_array_end");
 console.log(
-  (
-    performance.measure("time", "data_array_start", "data_array_end").duration /
-    1000
-  ).toFixed(1) + "sec"
+  "Data generation duration : " +
+    (
+      performance.measure("time", "data_array_start", "data_array_end")
+        .duration / 1000
+    ).toFixed(1) +
+    "sec"
 );
 
 export const App = () => {
   const [frame, setFrame] = useState(0);
   const [logCurrentData, setLogCurrentData] = useState(false);
+  const [isBinaryDataEnabled, setIsBinaryDataEnabled] = useState(true);
   const { polygons, colors, elevations, polygonCount, startIndices } = data[
     frame
   ];
@@ -111,29 +115,41 @@ export const App = () => {
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
         layers={[
-          new SolidPolygonLayer({
-            id: "polygon-layer",
-            coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
-            data: {
-              length: polygonCount,
-              startIndices,
-              attributes: {
-                // size: 2 = 1 point = [x,y]
-                getPolygon: {
-                  value: polygons,
-                  size: 2
+          isBinaryDataEnabled
+            ? new SolidPolygonLayer({
+                id: "solid-polygon-layer-binary",
+                coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+                data: {
+                  length: polygonCount,
+                  startIndices,
+                  attributes: {
+                    // size: 2 = 1 point = [x,y]
+                    getPolygon: {
+                      value: polygons,
+                      size: 2
+                    },
+                    // size: 4 = 1 color = [r, g, b, a]
+                    getFillColor: { value: colors, size: 4 },
+                    // size: 1 = elevation
+                    getElevation: { value: elevations, size: 1 }
+                  }
                 },
-                // size: 4 = 1 color = [r, g, b, a]
-                getFillColor: { value: colors, size: 4 },
-                // size: 1 = elevation
-                getElevation: { value: elevations, size: 1 }
-              }
-            },
-            _normalize: false,
-            filled: true,
-            extruded: true,
-            elevationScale: 1000
-          })
+                _normalize: false,
+                filled: true,
+                extruded: true,
+                elevationScale: 1000
+              })
+            : new SolidPolygonLayer({
+                id: "solid-polygon-layer",
+                coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+                data: data[frame].data,
+                getPolygon: (d) => d.contour,
+                getFillColor: (d) => d.color,
+                getElevation: (d) => d.elevation,
+                filled: true,
+                extruded: true,
+                elevationScale: 1000
+              })
         ]}
       >
         <Map
@@ -147,21 +163,33 @@ export const App = () => {
           position: "fixed",
           top: 0,
           left: 0,
-          padding: 5,
+          padding: 10,
           backgroundColor: "white",
           fontFamily: "monospace"
         }}
       >
         <div>Frame: {frame + 1}</div>
+
         <div>Number of polygons: {polygonCount}</div>
+
         <div style={{ display: "flex", alignItems: "center" }}>
-          <label htmlFor="logCurrentData">Log current frame data </label>
           <input
-            id="logCurrentData"
+            id="binary-attributes"
+            type="checkbox"
+            checked={isBinaryDataEnabled}
+            onChange={() => setIsBinaryDataEnabled((prev) => !prev)}
+          />
+          <label htmlFor="binary-attributes">Supply binary attributes </label>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <input
+            id="log-current-data"
             type="checkbox"
             checked={logCurrentData}
             onChange={() => setLogCurrentData((prev) => !prev)}
           />
+          <label htmlFor="log-current-data">Log current frame data </label>
         </div>
       </div>
     </div>
