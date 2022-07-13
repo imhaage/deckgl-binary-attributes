@@ -18,7 +18,7 @@ const INITIAL_VIEW_STATE = {
 };
 
 const gridSize = 512;
-const cellSize = 1;
+const cellSize = 2;
 
 function getRandomData() {
   let dataGrid = [];
@@ -84,8 +84,6 @@ console.log(
     1000
   ).toFixed(1) + "sec"
 );
-
-console.log({ data });
 
 export const App = () => {
   const [frame, setFrame] = useState(0);
@@ -155,15 +153,15 @@ export const App = () => {
         }}
       >
         <div>Frame: {frame + 1}</div>
-        <div>
-          <label>
-            Log data{" "}
-            <input
-              type="checkbox"
-              checked={logCurrentData}
-              onChange={() => setLogCurrentData((prev) => !prev)}
-            />
-          </label>
+        <div>Number of polygons: {polygonCount}</div>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <label htmlFor="logCurrentData">Log current frame data </label>
+          <input
+            id="logCurrentData"
+            type="checkbox"
+            checked={logCurrentData}
+            onChange={() => setLogCurrentData((prev) => !prev)}
+          />
         </div>
       </div>
     </div>
