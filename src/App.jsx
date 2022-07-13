@@ -65,7 +65,7 @@ for (let i = 0; i < 5; i++) {
   const polygonCount = d.length;
 
   const startIndices = [];
-  for (let index = 0; index < polygons.length; index = index + 5) {
+  for (let index = 0; index < polygons.length / 2; index += 5) {
     startIndices.push(index);
   }
 
@@ -75,7 +75,7 @@ for (let i = 0; i < 5; i++) {
     colors,
     elevations,
     polygonCount,
-    startIndices
+    startIndices: new Uint32Array(startIndices)
   });
 }
 performance.mark("data_array_end");

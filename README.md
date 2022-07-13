@@ -74,10 +74,10 @@ const elevations = new Uint8Array(
   data.flatMap((d) => d.contour.map((_) => d.elevation))
 );
 
-const polygonCount = data.length;
+const numberOfPolygons = data.length;
 
 const startIndices = [];
-for (let index = 0; index < polygons.length; index = index + 5) {
+for (let index = 0; index < polygons.length / 2; index += 5) {
   startIndices.push(index);
 }
 
@@ -85,7 +85,7 @@ for (let index = 0; index < polygons.length; index = index + 5) {
 new SolidPolygonLayer({
   data: {
     length: numberOfPolygons,
-    startIndices: ,
+    startIndices,
     attributes: {
       // size: 2 = 1 point = [x,y]
       getPolygon: {
@@ -100,7 +100,7 @@ new SolidPolygonLayer({
   },
   _normalize: false
   /* ... */
-})
+});
 ```
 
 ## Performance optimization
