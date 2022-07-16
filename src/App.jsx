@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import Map from "react-map-gl";
 import { BASEMAP } from "@deck.gl/carto";
 import { SolidPolygonLayer } from "@deck.gl/layers";
 import { COORDINATE_SYSTEM } from "deck.gl";
+import { motion } from "framer-motion";
 
 // Set your mapbox access token here
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
@@ -17,10 +18,8 @@ const INITIAL_VIEW_STATE = {
   bearing: 0
 };
 
-const gridSize = 512;
-const cellSize = 2;
-
-function getRandomData() {
+// gridSize = 512 = deckgl cartesian coordinates
+function getRandomData(gridSize = 512, cellSize = 2) {
   let dataGrid = [];
   for (let x = 0; x < gridSize; x += cellSize) {
     for (let y = 0; y < gridSize; y += cellSize) {
@@ -46,47 +45,53 @@ function getRandomData() {
   return dataGrid;
 }
 
-performance.mark("data_array_start");
-const data = [];
-for (let i = 0; i < 5; i++) {
-  console.log(`Data index : ${i}`);
-  const d = getRandomData();
+function getGrids() {
+  performance.mark("data_array_start");
+  const data = [];
+  for (let i = 0; i < 5; i++) {
+    console.log(`Data index : ${i}`);
+    const d = getRandomData();
 
-  const polygons = new Float32Array(d.flatMap((d) => d.contour.flat()));
+    const polygons = new Float32Array(d.flatMap((d) => d.contour.flat()));
 
-  const colors = new Uint8Array(
-    d.flatMap((d) => d.contour.flatMap((_) => d.color))
-  );
+    const colors = new Uint8Array(
+      d.flatMap((d) => d.contour.flatMap((_) => d.color))
+    );
 
-  const elevations = new Uint8Array(
-    d.flatMap((d) => d.contour.map((_) => d.elevation))
-  );
+    const elevations = new Uint8Array(
+      d.flatMap((d) => d.contour.map((_) => d.elevation))
+    );
 
-  const polygonCount = d.length;
+    const polygonCount = d.length;
 
-  const startIndices = [];
-  for (let index = 0; index < polygons.length / 2; index += 5) {
-    startIndices.push(index);
+    const startIndices = [];
+    for (let index = 0; index < polygons.length / 2; index += 5) {
+      startIndices.push(index);
+    }
+
+    data.push({
+      data: d,
+      polygons,
+      colors,
+      elevations,
+      polygonCount,
+      startIndices: new Uint32Array(startIndices)
+    });
   }
+  performance.mark("data_array_end");
+  console.log(
+    "Data generation duration : " +
+      (
+        performance.measure("time", "data_array_start", "data_array_end")
+          .duration / 1000
+      ).toFixed(1) +
+      "sec"
+  );
 
-  data.push({
-    data: d,
-    polygons,
-    colors,
-    elevations,
-    polygonCount,
-    startIndices: new Uint32Array(startIndices)
-  });
+  return data;
 }
-performance.mark("data_array_end");
-console.log(
-  "Data generation duration : " +
-    (
-      performance.measure("time", "data_array_start", "data_array_end")
-        .duration / 1000
-    ).toFixed(1) +
-    "sec"
-);
+
+const data = getGrids();
 
 export const App = () => {
   const [frame, setFrame] = useState(0);
@@ -95,17 +100,27 @@ export const App = () => {
   const { polygons, colors, elevations, polygonCount, startIndices } = data[
     frame
   ];
+  const animationRef = useRef();
 
   if (logCurrentData) {
     console.log(data[frame]);
   }
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setFrame((prev) => (prev === data.length - 1 ? 0 : prev + 1));
-    }, 1000);
+    let lastTime = 0;
+    function playAnimation(time) {
+      if (time - lastTime > 1000) {
+        setFrame((prev) => (prev === data.length - 1 ? 0 : prev + 1));
+        lastTime = time;
+      }
+
+      requestAnimationFrame(playAnimation);
+    }
+
+    animationRef.current = requestAnimationFrame(playAnimation);
+
     return () => {
-      clearInterval(interval);
+      cancelAnimationFrame(animationRef.current);
     };
   }, []);
 
@@ -191,6 +206,25 @@ export const App = () => {
           />
           <label htmlFor="log-current-data">Log current frame data </label>
         </div>
+      </div>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          padding: 10,
+          backgroundColor: "white"
+        }}
+      >
+        <motion.div
+          style={{ width: 100, height: 100, backgroundColor: "red" }}
+          animate={{
+            scale: [1, 0.2, 0.8, 0.5, 1],
+            rotate: [0, 0, 270, 270, 0],
+            borderRadius: ["20%", "20%", "50%", "50%", "20%"]
+          }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
       </div>
     </div>
   );

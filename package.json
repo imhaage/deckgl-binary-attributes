@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "deck.gl": "8.7",
+    "framer-motion": "^6.5.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-map-gl": "^7.0.17"
